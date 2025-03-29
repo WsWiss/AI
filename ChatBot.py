@@ -4,6 +4,10 @@ import random
 import locale
 import webbrowser
 import requests
+from googletrans import Translator
+import nlp
+
+from textblob import TextBlob
 
 API_KEY = "f62350d6ff8c087ec53d1479dab00ade"
 
@@ -31,7 +35,7 @@ responses = {
     r"какой сегодня день недели\??": f"{day}",
     r"какое сегодня число\??": f"Сегодня {date}",
     r"какая сегодня дата\??": f"Сегодня {date}",
-    #r"какая сегодня погода\??": "Я не синоптик",
+    r"какая сегодня погода\??": "Я не синоптик",
     r"как дела\??": [
         "Всё чудесно! За окном весна!",
         "Спасибо за вопрос! У меня все хорошо!",
@@ -119,10 +123,49 @@ def chatbot_response(text):
     # Рандомный ответ на непонятный запрос
     return random.choice(["Я не понял вопрос.", "Попробуйте перефразировать."])
 
+def analyze_sentiment(text):
+    print("Входной текст:", text)
+
+
+    blob = TextBlob(text)
+    polarity = blob.sentiment.polarity
+    print(polarity)
+    if polarity > 0:
+        return "Ты выглядишь радостным! 😊"
+    elif polarity < 0:
+        return "Похоже у тебя плохое настроение 😢"
+    else:
+        return "Нейтрально."
+
+
+def process_text(text):
+    doc = nlp(text)
+    tokens = [token.lemma_ for token in doc]
+    return tokens
+
+
+def get_response(user_input):
+    user_input_lower = user_input.lower()
+    if re.search(r"\bпривет\b", user_input_lower):
+        return "Привет! Чем могу помочь?"
+    elif re.search(r"\bкак дела\b", user_input_lower):
+        sentiment_feedback = analyze_sentiment(user_input)
+        return f"{sentiment_feedback} Что нового у тебя?"
+    elif re.search(r"\bпока\b", user_input_lower):
+        return "До встречи!"
+
+    tokens = process_text(user_input)
+    if "погода" in tokens:
+        return "Я пока не умею узнавать погоду, но скоро научусь!"
+    return "Извини, я пока не знаю, как ответить."
+
+
+
 if __name__ == "__main__":
     with open("chat_log.txt", "w", encoding="utf-8") as log_file:
         log_file.write("-" * 40 + "\n")
-        
+
+
     print("Введите 'выход' для завершения диалога.")
     while True:
         user_input = input("Вы: ")
@@ -134,7 +177,8 @@ if __name__ == "__main__":
                 log_file.write(f"Бот: {farewell}\n")
                 log_file.write("-" * 40 + "\n")
             break
-        bot_reply = chatbot_response(user_input)
+        #bot_reply = chatbot_response(user_input)
+        bot_reply = analyze_sentiment(user_input)
         print("Бот:", bot_reply)
         # Логируем диалог
         log_dialog(user_input, bot_reply)
